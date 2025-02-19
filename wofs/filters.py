@@ -1,6 +1,7 @@
 """
 Set individual bitflags needed for wofls.
 """
+
 import numpy as np
 import scipy.ndimage
 import xarray
@@ -8,7 +9,7 @@ import xarray
 from wofs import terrain, constants, boilerplate
 from wofs.constants import MASKED_CLOUD, MASKED_CLOUD_SHADOW, NO_DATA
 
-PQA_SATURATION_BITS = sum(2 ** n for n in [0, 1, 2, 3, 4, 7])  # exclude thermal
+PQA_SATURATION_BITS = sum(2**n for n in [0, 1, 2, 3, 4, 7])  # exclude thermal
 PQA_CONTIGUITY_BITS = 0x01FF
 PQA_CLOUD_BITS = 0x0C00
 PQA_CLOUD_SHADOW_BITS = 0x3000
@@ -19,7 +20,7 @@ def dilate(array):
     """Dilation e.g. for cloud and cloud/terrain shadow"""
     # kernel = [[1] * 7] * 7 # blocky 3-pixel dilation
     y, x = np.ogrid[-3:4, -3:4]
-    kernel = (x * x) + (y * y) <= 3.5 ** 2  # disk-like 3-pixel radial dilation
+    kernel = (x * x) + (y * y) <= 3.5**2  # disk-like 3-pixel radial dilation
     return scipy.ndimage.binary_dilation(array, structure=kernel)
 
 
@@ -50,9 +51,9 @@ def pq_filter(pq):
     ipq = ~pq  # bitwise-not, e.g. flag cloudiness rather than cloudfree
 
     masking = np.zeros(ipq.shape, dtype=np.uint8)
-    masking[
-        (ipq & (PQA_SATURATION_BITS | PQA_CONTIGUITY_BITS)).astype(np.bool)
-    ] = constants.MASKED_NO_CONTIGUITY
+    masking[(ipq & (PQA_SATURATION_BITS | PQA_CONTIGUITY_BITS)).astype(bool)] = (
+        constants.MASKED_NO_CONTIGUITY
+    )
     # masking[(ipq & PQA_SEA_WATER_BIT).astype(np.bool)] += constants.MASKED_SEA_WATER
     masking[dilate(ipq & PQA_CLOUD_BITS)] += constants.MASKED_CLOUD
     masking[dilate(ipq & PQA_CLOUD_SHADOW_BITS)] += constants.MASKED_CLOUD_SHADOW
@@ -94,9 +95,9 @@ def c2_filter(pq):
 
     masking = np.zeros(pq.shape, dtype=np.uint8)
     masking[
-        ((pq & C2_DILATED_BITS)).astype(np.bool)
-        | ((pq & C2_CLOUD_BITS)).astype(np.bool)
-        | ((pq & C2_CIRRUS_BITS)).astype(np.bool)
+        ((pq & C2_DILATED_BITS)).astype(bool)
+        | ((pq & C2_CLOUD_BITS)).astype(bool)
+        | ((pq & C2_CIRRUS_BITS)).astype(bool)
     ] += constants.MASKED_CLOUD
     masking[dilate(pq & C2_CLOUD_SHADOW_BITS)] += constants.MASKED_CLOUD_SHADOW
     return masking

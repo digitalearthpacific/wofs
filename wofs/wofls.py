@@ -17,6 +17,7 @@ Issues:
       Also, should quantify whether earth's curvature is significant on tile scale.
     - Yet to profile memory, CPU or IO usage.
 """
+
 import numpy as np
 
 from wofs import classifier, filters
@@ -27,14 +28,14 @@ from wofs.filters import eo_filter, fmask_filter, terrain_filter, c2_filter
 def woffles(nbar, pq, dsm, dsm_no_data=-1000, ignore_dsm_no_data=False):
     """Generate a Water Observation Feature Layer from NBAR, PQ and surface elevation inputs."""
 
-    water = classifier.classify(nbar.to_array(dim='band')) \
-        | filters.eo_filter(nbar) \
-        | filters.pq_filter(pq.pqa) \
+    water = (
+        classifier.classify(nbar.to_array(dim="band"))
+        | filters.eo_filter(nbar)
+        | filters.pq_filter(pq.pqa)
         | filters.terrain_filter(
-            dsm,
-            nbar,
-            no_data=dsm_no_data,
-            ignore_dsm_no_data=ignore_dsm_no_data)
+            dsm, nbar, no_data=dsm_no_data, ignore_dsm_no_data=ignore_dsm_no_data
+        )
+    )
 
     _fix_nodata_to_single_value(water)
 
@@ -46,9 +47,7 @@ def woffles(nbar, pq, dsm, dsm_no_data=-1000, ignore_dsm_no_data=False):
 def woffles_ard(ard, dsm, dsm_no_data=-1000, ignore_dsm_no_data=False):
     """Generate a Water Observation Feature Layer from ARD (NBART and FMASK) and surface elevation inputs."""
     nbar_bands = spectral_bands(ard)
-    water = classifier.classify(nbar_bands) \
-        | eo_filter(ard) \
-        | fmask_filter(ard.fmask)
+    water = classifier.classify(nbar_bands) | eo_filter(ard) | fmask_filter(ard.fmask)
 
     if dsm is not None:
         # terrain_filter arbitrarily expects a band named 'blue'
@@ -56,7 +55,7 @@ def woffles_ard(ard, dsm, dsm_no_data=-1000, ignore_dsm_no_data=False):
             dsm,
             ard.rename({"nbart_blue": "blue"}),
             no_data=dsm_no_data,
-            ignore_dsm_no_data=ignore_dsm_no_data
+            ignore_dsm_no_data=ignore_dsm_no_data,
         )
 
     _fix_nodata_to_single_value(water)
@@ -69,16 +68,14 @@ def woffles_ard(ard, dsm, dsm_no_data=-1000, ignore_dsm_no_data=False):
 def woffles_usgs_c2(c2, dsm, dsm_no_data=-1000, ignore_dsm_no_data=False):
     """Generate a Water Observation Feature Layer from USGS Collection 2 and surface elevation inputs."""
     nbar_bands = spectral_bands(c2)
-    water = classifier.classify(nbar_bands) \
-        | eo_filter(c2) \
-        | c2_filter(c2.fmask)
+    water = classifier.classify(nbar_bands) | eo_filter(c2) | c2_filter(c2.fmask)
     if dsm is not None:
         # terrain_filter arbitrarily expects a band named 'blue'
         water |= terrain_filter(
             dsm,
             c2.rename({"nbart_blue": "blue"}),
             no_data=dsm_no_data,
-            ignore_dsm_no_data=ignore_dsm_no_data
+            ignore_dsm_no_data=ignore_dsm_no_data,
         )
 
     _fix_nodata_to_single_value(water)
